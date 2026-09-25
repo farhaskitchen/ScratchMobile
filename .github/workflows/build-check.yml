@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   build-scratch-gui:
     runs-on: ubuntu-latest
@@ -33,13 +36,18 @@ jobs:
           set -o pipefail
           npm run build 2>&1 | tee /tmp/build.log
 
-      - name: Post build errors to job summary on failure
+      - name: Commit build log on failure (debug only)
         if: failure()
         run: |
-          echo '## Build log (last 150 lines)' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 150 /tmp/build.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          mkdir -p /tmp/out
+          tail -n 200 /tmp/build.log > /tmp/out/last-build-error.log
+          cd "$GITHUB_WORKSPACE"
+          cp /tmp/out/last-build-error.log ./last-build-error.log
+          git config user.email "ci@scratchmobile.local"
+          git config user.name "ScratchMobile CI"
+          git add last-build-error.log
+          git commit -m "CI: build error log [skip ci]" || echo "nothing to commit"
+          git push origin HEAD:main || echo "push failed, continuing"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
