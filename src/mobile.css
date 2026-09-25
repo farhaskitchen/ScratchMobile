@@ -1,0 +1,46 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sm-app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
+
+.sm-tabbar {
+    display: flex;
+    flex-shrink: 0;
+    background: #0b1a33;
+    padding: env(safe-area-inset-top, 0) 0 0 0;
+}
+
+.sm-tab {
+    flex: 1;
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #b6c6e3;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+
+.sm-tab.active {
+    color: #ffffff;
+    border-bottom-color: #ffab19;
+}
+
+.sm-gui-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.sm-gui-wrap > div {
+    height: 100%;
+}

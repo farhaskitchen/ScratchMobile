@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  build-scratch-gui:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,9 +28,9 @@ jobs:
         run: npm ci || true
         # prepublish hook fails fetching hardware firmware zips (micro:bit/EV3) which
         # we don't need -- node_modules is already populated by the time that step runs.
-        # Using `npm ci` (not --legacy-peer-deps install) resolves exactly against
-        # package-lock.json, matching upstream CI and avoiding dependency-tree drift
-        # that broke react-virtualized's resolution of 'react'.
+        # `npm ci` (not --legacy-peer-deps) resolves exactly against package-lock.json,
+        # matching upstream CI and avoiding dependency-tree drift that broke
+        # react-virtualized's resolution of 'react'.
 
       - name: Stub microbit firmware URL (skip hardware extension asset)
         working-directory: vendor/scratch-gui
@@ -41,8 +41,12 @@ jobs:
           module.exports = '';
           EOF
 
-      - name: Build scratch-gui
-        working-directory: vendor/scratch-gui
+      - name: Install our app deps
+        run: npm install
+        # postinstall (scripts/link-scratch-gui-deps.js) symlinks scratch-webpack-configuration's
+        # peer loader packages in from vendor/scratch-gui/node_modules once it exists (it does by now).
+
+      - name: Build ScratchMobile
         shell: bash
         run: |
           set -o pipefail
@@ -58,5 +62,5 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scratch-gui-build
-          path: vendor/scratch-gui/build/
+          name: scratchmobile-build
+          path: build/
