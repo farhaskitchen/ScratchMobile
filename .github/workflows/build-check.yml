@@ -1,0 +1,37 @@
+name: Build check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-scratch-gui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 20 (matches scratch-gui .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clone scratch-gui base
+        run: git clone --depth 1 https://github.com/scratchfoundation/scratch-gui.git vendor/scratch-gui
+
+      - name: Install scratch-gui deps
+        working-directory: vendor/scratch-gui
+        run: npm install --legacy-peer-deps || true
+        # prepublish hook fails fetching hardware firmware zips (micro:bit/EV3) which
+        # we don't need -- node_modules is already populated by the time that step runs
+
+      - name: Build scratch-gui
+        working-directory: vendor/scratch-gui
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scratch-gui-build
+          path: vendor/scratch-gui/build/
