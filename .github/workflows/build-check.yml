@@ -25,9 +25,21 @@ jobs:
 
       - name: Install scratch-gui deps
         working-directory: vendor/scratch-gui
-        run: npm install --legacy-peer-deps || true
+        run: npm ci || true
         # prepublish hook fails fetching hardware firmware zips (micro:bit/EV3) which
-        # we don't need -- node_modules is already populated by the time that step runs
+        # we don't need -- node_modules is already populated by the time that step runs.
+        # Using `npm ci` (not --legacy-peer-deps install) resolves exactly against
+        # package-lock.json, matching upstream CI and avoiding dependency-tree drift
+        # that broke react-virtualized's resolution of 'react'.
+
+      - name: Stub microbit firmware URL (skip hardware extension asset)
+        working-directory: vendor/scratch-gui
+        run: |
+          mkdir -p src/generated
+          cat > src/generated/microbit-hex-url.cjs << 'EOF'
+          // Stub: micro:bit firmware not fetched in CI (hardware extension unused by ScratchMobile).
+          module.exports = '';
+          EOF
 
       - name: Build scratch-gui
         working-directory: vendor/scratch-gui
@@ -36,18 +48,12 @@ jobs:
           set -o pipefail
           npm run build 2>&1 | tee /tmp/build.log
 
-      - name: Commit build log on failure (debug only)
+      - name: Save build log as artifact on failure
         if: failure()
-        run: |
-          mkdir -p /tmp/out
-          tail -n 200 /tmp/build.log > /tmp/out/last-build-error.log
-          cd "$GITHUB_WORKSPACE"
-          cp /tmp/out/last-build-error.log ./last-build-error.log
-          git config user.email "ci@scratchmobile.local"
-          git config user.name "ScratchMobile CI"
-          git add last-build-error.log
-          git commit -m "CI: build error log [skip ci]" || echo "nothing to commit"
-          git push origin HEAD:main || echo "push failed, continuing"
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-error-log
+          path: /tmp/build.log
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
